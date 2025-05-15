@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardBody, CardFooter } from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Badge from '../components/UI/Badge';
-import { Search, ShoppingCart, Plus, Trash2, PackageOpen, Calculator, User, Receipt, CreditCard, Banknote, QrCode, Calendar } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Trash2, PackageOpen, Calculator, User, Receipt, CreditCard, Banknote, QrCode, Calendar, Edit } from 'lucide-react';
 import { mockSales, Sale, SaleItem, paymentMethodTranslations } from '../data/sales';
 import { mockProducts, Product } from '../data/products';
 import { mockCustomers, Customer } from '../data/customers';
@@ -15,6 +15,7 @@ const Sales = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sales, setSales] = useState(mockSales);
   const [isNewSaleModalOpen, setIsNewSaleModalOpen] = useState(false);
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   
   // New sale state
   const [selectedProducts, setSelectedProducts] = useState<(Product & { quantity: number })[]>([]);
@@ -100,18 +101,44 @@ const Sales = () => {
     setIsAddingNewCustomer(false);
     resetCustomer();
   };
+
+  const openEditSale = (sale: Sale) => {
+    setSelectedSale(sale);
+    // Convert sale items to selected products format
+    const saleProducts = sale.items.map(item => {
+      const product = mockProducts.find(p => p.id === item.productId);
+      if (!product) return null;
+      return {
+        ...product,
+        quantity: item.quantity
+      };
+    }).filter(Boolean) as (Product & { quantity: number })[];
+    
+    setSelectedProducts(saleProducts);
+    
+    // Set customer if exists
+    if (sale.customerId) {
+      const customer = mockCustomers.find(c => c.id === sale.customerId);
+      if (customer) {
+        setSelectedCustomer(customer);
+      }
+    }
+    
+    setPaymentMethod(sale.paymentMethod);
+    setIsNewSaleModalOpen(true);
+  };
   
   const handleCreateSale = () => {
     if (selectedProducts.length === 0) {
       alert('Adicione pelo menos um produto antes de finalizar a venda');
       return;
     }
-    
-    const newSale: Sale = {
-      id: `V-${new Date().getFullYear()}-${String(sales.length + 1).padStart(3, '0')}`,
+
+    const saleData: Sale = {
+      id: selectedSale ? selectedSale.id : `V-${new Date().getFullYear()}-${String(sales.length + 1).padStart(3, '0')}`,
       customerId: selectedCustomer?.id || null,
       customerName: selectedCustomer?.name || null,
-      date: new Date().toISOString(),
+      date: selectedSale ? selectedSale.date : new Date().toISOString(),
       items: selectedProducts.map(p => ({
         productId: p.id,
         productName: p.name,
@@ -126,7 +153,16 @@ const Sales = () => {
       status: 'completed',
     };
     
-    setSales([newSale, ...sales]);
+    if (selectedSale) {
+      // Update existing sale
+      setSales(sales.map(sale => 
+        sale.id === selectedSale.id ? saleData : sale
+      ));
+    } else {
+      // Create new sale
+      setSales([saleData, ...sales]);
+    }
+    
     resetSaleForm();
     setIsNewSaleModalOpen(false);
   };
@@ -137,6 +173,7 @@ const Sales = () => {
     setPaymentMethod('credit_card');
     setProductSearchTerm('');
     setCustomerSearchTerm('');
+    setSelectedSale(null);
   };
   
   const openNewSaleModal = () => {
@@ -146,6 +183,7 @@ const Sales = () => {
   
   const closeNewSaleModal = () => {
     setIsNewSaleModalOpen(false);
+    resetSaleForm();
   };
 
   return (
@@ -189,6 +227,7 @@ const Sales = () => {
                   <th>Produtos</th>
                   <th>Pagamento</th>
                   <th className="text-right">Total</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -229,11 +268,19 @@ const Sales = () => {
                       <td className="text-right font-semibold">
                         {sale.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </td>
+                      <td>
+                        <button
+                          onClick={() => openEditSale(sale)}
+                          className="p-1 text-gray-400 hover:text-white rounded-md hover:bg-dark-600"
+                        >
+                          <Edit size={18} />
+                        </button>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="text-center py-4">
+                    <td colSpan={7} className="text-center py-4">
                       <p className="text-gray-400">Nenhuma venda encontrada</p>
                     </td>
                   </tr>
@@ -244,7 +291,7 @@ const Sales = () => {
         </CardBody>
       </Card>
       
-      {/* New Sale Modal */}
+      {/* New/Edit Sale Modal */}
       <AnimatePresence>
         {isNewSaleModalOpen && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -266,7 +313,9 @@ const Sales = () => {
                 className="relative bg-dark-800 rounded-xl shadow-xl w-full max-w-4xl border border-dark-700 z-10 max-h-[90vh] overflow-hidden flex flex-col"
               >
                 <div className="px-6 py-4 border-b border-dark-700 sticky top-0 bg-dark-800 z-10">
-                  <h3 className="text-xl font-semibold text-white">Nova Venda</h3>
+                  <h3 className="text-xl font-semibold text-white">
+                    {selectedSale ? 'Editar Venda' : 'Nova Venda'}
+                  </h3>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-6">
@@ -595,7 +644,7 @@ const Sales = () => {
                     disabled={selectedProducts.length === 0}
                   >
                     <Calculator size={18} />
-                    <span>Finalizar Venda</span>
+                    <span>{selectedSale ? 'Atualizar Venda' : 'Finalizar Venda'}</span>
                   </Button>
                 </div>
               </motion.div>
@@ -626,7 +675,8 @@ const Sales = () => {
                 className="relative bg-dark-800 rounded-xl shadow-xl w-full max-w-2xl border border-dark-700 z-10"
               >
                 <div className="px-6 py-4 border-b border-dark-700">
-                  <h3 className="text-xl font-semibold text-white">Novo Cliente</h3>
+                  <h3 className="text-xl font-semibol
+d text-white">Novo Cliente</h3>
                 </div>
                 
                 <form onSubmit={handleSubmitCustomer(handleAddNewCustomer)}>
@@ -663,7 +713,6 @@ const Sales = () => {
                         />
                         {customerErrors.phone && <p className="mt-1 text-xs text-error-light">Telefone é obrigatório</p>}
                       </div>
-                
                       
                       <div>
                         <label htmlFor="birthday" className="block text-sm font-medium text-gray-300 mb-1">
