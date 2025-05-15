@@ -171,7 +171,7 @@ const Customers = () => {
                           >
                             <Edit size={18} />
                           </button>
-                          {user?.role !== 'admin' && (
+                          {user?.role === 'admin' && (
                             <button
                               onClick={() => handleDeleteCustomer(customer.id)}
                               className="p-1 text-gray-400 hover:text-error-light rounded-md hover:bg-dark-600"
