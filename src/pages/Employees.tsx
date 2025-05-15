@@ -49,6 +49,7 @@ const Employees = () => {
           ...selectedEmployee, 
           ...data,
           avatar: data.avatar || selectedEmployee.avatar,
+          hireDate: selectedEmployee.hireDate, // Keep the original hire date
         } : employee
       );
       setEmployees(updatedEmployees);
@@ -230,7 +231,6 @@ const Employees = () => {
         </CardBody>
       </Card>
       
-      {/* Modal for adding/editing employee */}
       <AnimatePresence>
         {isAddModalOpen && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -304,22 +304,6 @@ const Employees = () => {
                           {...register('phone', { required: true })}
                         />
                         {errors.phone && <p className="mt-1 text-xs text-error-light">Telefone é obrigatório</p>}
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="hireDate" className="block text-sm font-medium text-gray-300 mb-1">
-                          <div className="flex items-center gap-1">
-                            <Calendar size={14} />
-                            <span>Data de Contratação</span>
-                          </div>
-                        </label>
-                        <input
-                          id="hireDate"
-                          type="date"
-                          className={`input ${errors.hireDate ? 'border-error-dark' : ''}`}
-                          {...register('hireDate', { required: true })}
-                        />
-                        {errors.hireDate && <p className="mt-1 text-xs text-error-light">Data de contratação é obrigatória</p>}
                       </div>
                       
                       <div>

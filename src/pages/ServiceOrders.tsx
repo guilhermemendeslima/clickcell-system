@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Card, CardHeader, CardBody } from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Badge from '../components/UI/Badge';
-import { Search, ClipboardPlus, Edit, Smartphone, User, FileText, DollarSign, PenTool as Tool } from 'lucide-react';
+import { Search, ClipboardPlus, Edit, Smartphone, User, FileText, DollarSign, PenTool as Tool, Plus, Calendar } from 'lucide-react';
 import { mockServiceOrders, ServiceOrder, serviceStatusTranslations, serviceStatusColors } from '../data/serviceOrders';
-import { mockCustomers } from '../data/customers';
+import { mockCustomers, Customer } from '../data/customers';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -19,8 +19,10 @@ const ServiceOrders = () => {
   const [customerSearchTerm, setCustomerSearchTerm] = useState('');
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<{ id: string; name: string } | null>(null);
+  const [isAddingNewCustomer, setIsAddingNewCustomer] = useState(false);
   
   const { register, handleSubmit, reset, formState: { errors }, setValue } = useForm<ServiceOrder>();
+  const { register: registerCustomer, handleSubmit: handleSubmitCustomer, formState: { errors: customerErrors }, reset: resetCustomer } = useForm<Customer>();
   
   const filteredOrders = serviceOrders.filter(order => 
     (activeStatusFilter === 'all' || order.status === activeStatusFilter) &&
@@ -35,6 +37,21 @@ const ServiceOrders = () => {
     customer.phone.includes(customerSearchTerm) ||
     customer.email.toLowerCase().includes(customerSearchTerm.toLowerCase())
   );
+
+  const handleAddNewCustomer = (data: Customer) => {
+    const newCustomer: Customer = {
+      ...data,
+      id: `C-${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0],
+      purchases: 0,
+      lastPurchase: null,
+    };
+    
+    mockCustomers.push(newCustomer);
+    selectCustomer({ id: newCustomer.id, name: newCustomer.name });
+    setIsAddingNewCustomer(false);
+    resetCustomer();
+  };
   
   const handleAddServiceOrder = (data: ServiceOrder) => {
     const newOrder: ServiceOrder = {
@@ -237,7 +254,6 @@ const ServiceOrders = () => {
         </CardBody>
       </Card>
       
-      {/* Modal for adding/editing orders */}
       <AnimatePresence>
         {isAddModalOpen && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -266,7 +282,6 @@ const ServiceOrders = () => {
                 
                 <form onSubmit={handleSubmit(selectedOrder ? handleEditServiceOrder : handleAddServiceOrder)}>
                   <div className="p-6 space-y-6">
-                    {/* Customer Selection */}
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">Cliente</label>
                       <div className="mb-2">
@@ -307,32 +322,45 @@ const ServiceOrders = () => {
                                   />
                                 </div>
                                 
-                                {customerSearchTerm && (
-                                  <div className="mt-2 border border-dark-600 rounded-lg overflow-hidden max-h-48 overflow-y-auto">
-                                    {filteredCustomers.length > 0 ? (
-                                      filteredCustomers.map(customer => (
-                                        <button
-                                          key={customer.id}
-                                          type="button"
-                                          className="flex items-center w-full p-2 hover:bg-dark-700 text-left"
-                                          onClick={() => selectCustomer({ id: customer.id, name: customer.name })}
-                                        >
-                                          <div className="w-8 h-8 bg-primary-500/20 rounded-full flex items-center justify-center mr-2">
-                                            <User size={16} className="text-primary-400" />
-                                          </div>
-                                          <div>
-                                            <div className="font-medium">{customer.name}</div>
-                                            <div className="text-xs text-gray-400">{customer.phone}</div>
-                                          </div>
-                                        </button>
-                                      ))
-                                    ) : (
-                                      <div className="p-3 text-center text-gray-400">
-                                        Nenhum cliente encontrado
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
+                                <div className="mt-2">
+                                  <Button
+                                    type="button"
+                                    variant="dark"
+                                    size="sm"
+                                    className="w-full mb-2"
+                                    onClick={() => setIsAddingNewCustomer(true)}
+                                  >
+                                    <Plus size={16} className="mr-2" />
+                                    Novo Cliente
+                                  </Button>
+                                  
+                                  {customerSearchTerm && (
+                                    <div className="border border-dark-600 rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+                                      {filteredCustomers.length > 0 ? (
+                                        filteredCustomers.map(customer => (
+                                          <button
+                                            key={customer.id}
+                                            type="button"
+                                            className="flex items-center w-full p-2 hover:bg-dark-700 text-left"
+                                            onClick={() => selectCustomer({ id: customer.id, name: customer.name })}
+                                          >
+                                            <div className="w-8 h-8 bg-primary-500/20 rounded-full flex items-center justify-center mr-2">
+                                              <User size={16} className="text-primary-400" />
+                                            </div>
+                                            <div>
+                                              <div className="font-medium">{customer.name}</div>
+                                              <div className="text-xs text-gray-400">{customer.phone}</div>
+                                            </div>
+                                          </button>
+                                        ))
+                                      ) : (
+                                        <div className="p-3 text-center text-gray-400">
+                                          Nenhum cliente encontrado
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             ) : (
                               <Button
@@ -352,6 +380,17 @@ const ServiceOrders = () => {
                         <p className="text-error-light text-xs">Cliente é obrigatório</p>
                       )}
                     </div>
+                    
+                    {selectedOrder && (
+                      <div>
+                        <label htmlFor="orderId" className="block text-sm font-medium text-gray-300 mb-1">Número da OS</label>
+                        <input
+                          id="orderId"
+                          className="input"
+                          {...register('id')}
+                        />
+                      </div>
+                    )}
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
@@ -489,6 +528,115 @@ const ServiceOrders = () => {
                       disabled={!selectedCustomer}
                     >
                       {selectedOrder ? 'Atualizar' : 'Registrar'} Ordem de Serviço
+                    </Button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+      
+      <AnimatePresence>
+        {isAddingNewCustomer && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen px-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 bg-black/60"
+                onClick={() => setIsAddingNewCustomer(false)}
+              ></motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="relative bg-dark-800 rounded-xl shadow-xl w-full max-w-2xl border border-dark-700 z-10"
+              >
+                <div className="px-6 py-4 border-b border-dark-700">
+                  <h3 className="text-xl font-semibold text-white">Novo Cliente</h3>
+                </div>
+                
+                <form onSubmit={handleSubmitCustomer(handleAddNewCustomer)}>
+                  <div className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">Nome</label>
+                        <input
+                          id="name"
+                          className={`input ${customerErrors.name ? 'border-error-dark' : ''}`}
+                          {...registerCustomer('name', { required: true })}
+                        />
+                        {customerErrors.name && <p className="mt-1 text-xs text-error-light">Nome é obrigatório</p>}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                        <input
+                          id="email"
+                          type="email"
+                          className={`input ${customerErrors.email ? 'border-error-dark' : ''}`}
+                          {...registerCustomer('email', { required: true, pattern: /^\S+@\S+$/i })}
+                        />
+                        {customerErrors.email && <p className="mt-1 text-xs text-error-light">Email válido é obrigatório</p>}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
+                        <input
+                          id="phone"
+                          className={`input ${customerErrors.phone ? 'border-error-dark' : ''}`}
+                          placeholder="(99) 99999-9999"
+                          {...registerCustomer('phone', { required: true })}
+                        />
+                        {customerErrors.phone && <p className="mt-1 text-xs text-error-light">Telefone é obrigatório</p>}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="birthday" className="block text-sm font-medium text-gray-300 mb-1">
+                          <div className="flex items-center gap-1">
+                            <Calendar size={14} />
+                            <span>Data de Nascimento</span>
+                          </div>
+                        </label>
+                        <input
+                          id="birthday"
+                          type="date"
+                          className="input"
+                          {...registerCustomer('birthday')}
+                        />
+                      </div>
+                      
+                      <div className="md:col-span-2">
+                        <label htmlFor="address" className="block text-sm font-medium text-gray-300 mb-1">Endereço</label>
+                        <input
+                          id="address"
+                          className={`input ${customerErrors.address ? 'border-error-dark' : ''}`}
+                          placeholder="Rua, número, bairro, cidade, estado"
+                          {...registerCustomer('address', { required: true })}
+                        />
+                        {customerErrors.address && <p className="mt-1 text-xs text-error-light">Endereço é obrigatório</p>}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="px-6 py-4 border-t border-dark-700 flex justify-end gap-3">
+                    <Button
+                      type="button"
+                      variant="dark"
+                      onClick={() => setIsAddingNewCustomer(false)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                    >
+                      Adicionar Cliente
                     </Button>
                   </div>
                 </form>
