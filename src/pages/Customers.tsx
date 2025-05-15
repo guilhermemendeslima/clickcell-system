@@ -7,8 +7,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { useForm } from 'react-hook-form';
+import { useAuth } from '../contexts/AuthContext';
 
 const Customers = () => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
