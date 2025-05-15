@@ -137,10 +137,15 @@ const Navbar = ({ onMenuClick, user }: NavbarProps) => {
                     </div>
                   </div>
                   <div className="py-1">
-                    <button className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-dark-700">
-                      <Settings size={16} />
-                      <span>Configurações</span>
-                    </button>
+                    {user?.role === 'admin' && (
+                      <button 
+                        onClick={() => navigate('/employees')}
+                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-dark-700"
+                      >
+                        <Settings size={16} />
+                        <span>Configurações</span>
+                      </button>
+                    )}
                     <button 
                       onClick={handleLogout}
                       className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-error-light hover:bg-dark-700"

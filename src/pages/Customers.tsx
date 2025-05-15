@@ -107,6 +107,7 @@ const Customers = () => {
                   <th>Cliente</th>
                   <th>Contato</th>
                   <th>Endereço</th>
+                  <th>Aniversário</th>
                   <th>Compras</th>
                   <th>Ações</th>
                 </tr>
@@ -145,6 +146,12 @@ const Customers = () => {
                         </div>
                       </td>
                       <td>
+                        <div className="flex items-center gap-1">
+                          <Calendar size={14} className="text-gray-400" />
+                          <span>{format(parseISO(customer.birthday), 'dd/MM/yyyy')}</span>
+                        </div>
+                      </td>
+                      <td>
                         <div className="flex flex-col">
                           <span className="font-medium">{customer.purchases} compras</span>
                           {customer.lastPurchase && (
@@ -162,19 +169,21 @@ const Customers = () => {
                           >
                             <Edit size={18} />
                           </button>
-                          <button
-                            onClick={() => handleDeleteCustomer(customer.id)}
-                            className="p-1 text-gray-400 hover:text-error-light rounded-md hover:bg-dark-600"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          {user?.role !== 'admin' && (
+                            <button
+                              onClick={() => handleDeleteCustomer(customer.id)}
+                              className="p-1 text-gray-400 hover:text-error-light rounded-md hover:bg-dark-600"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="text-center py-4">
+                    <td colSpan={6} className="text-center py-4">
                       <p className="text-gray-400">Nenhum cliente encontrado</p>
                     </td>
                   </tr>
@@ -185,7 +194,6 @@ const Customers = () => {
         </CardBody>
       </Card>
       
-      {/* Modal for adding/editing customer */}
       <AnimatePresence>
         {isAddModalOpen && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
