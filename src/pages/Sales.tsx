@@ -2,16 +2,19 @@ import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardBody, CardFooter } from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Badge from '../components/UI/Badge';
-import { Search, ShoppingCart, Plus, Trash2, PackageOpen, Calculator, User, Receipt, CreditCard, Banknote, QrCode, Calendar, Edit } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Trash2, PackageOpen, Calculator, User, Receipt, CreditCard, Banknote, QrCode, Calendar, Edit, UserCheck } from 'lucide-react';
 import { mockSales, Sale, SaleItem, paymentMethodTranslations } from '../data/sales';
 import { mockProducts, Product } from '../data/products';
 import { mockCustomers, Customer } from '../data/customers';
+import { mockEmployees } from '../data/employees';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { useForm } from 'react-hook-form';
+import { useAuth } from '../contexts/AuthContext';
 
 const Sales = () => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [sales, setSales] = useState(mockSales);
   const [isNewSaleModalOpen, setIsNewSaleModalOpen] = useState(false);
@@ -31,7 +34,8 @@ const Sales = () => {
   const filteredSales = sales.filter(sale => 
     sale.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (sale.customerName && sale.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    paymentMethodTranslations[sale.paymentMethod].toLowerCase().includes(searchTerm.toLowerCase())
+    paymentMethodTranslations[sale.paymentMethod].toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sale.employeeName.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
   const filteredProducts = mockProducts.filter(product => 
@@ -148,8 +152,8 @@ const Sales = () => {
       })),
       total: calculateTotal(),
       paymentMethod: paymentMethod,
-      employeeId: '2', // Using a mock employee
-      employeeName: 'Marina Souza',
+      employeeId: user?.id || '',
+      employeeName: user?.name || '',
       status: 'completed',
     };
     
@@ -226,6 +230,7 @@ const Sales = () => {
                   <th>Cliente</th>
                   <th>Produtos</th>
                   <th>Pagamento</th>
+                  <th>Vendedor</th>
                   <th className="text-right">Total</th>
                   <th>Ações</th>
                 </tr>
@@ -265,6 +270,12 @@ const Sales = () => {
                           <span>{paymentMethodTranslations[sale.paymentMethod]}</span>
                         </div>
                       </td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <UserCheck size={16} className="text-primary-400" />
+                          <span>{sale.employeeName}</span>
+                        </div>
+                      </td>
                       <td className="text-right font-semibold">
                         {sale.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </td>
@@ -280,7 +291,7 @@ const Sales = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="text-center py-4">
+                    <td colSpan={8} className="text-center py-4">
                       <p className="text-gray-400">Nenhuma venda encontrada</p>
                     </td>
                   </tr>
@@ -480,31 +491,44 @@ const Sales = () => {
                                   />
                                 </div>
                                 
-                                {customerSearchTerm && (
-                                  <div className="mt-2 border border-dark-600 rounded-lg overflow-hidden max-h-48 overflow-y-auto">
-                                    {filteredCustomers.length > 0 ? (
-                                      filteredCustomers.map(customer => (
-                                        <button
-                                          key={customer.id}
-                                          className="flex items-center w-full p-2 hover:bg-dark-700 text-left"
-                                          onClick={() => selectCustomer(customer)}
-                                        >
-                                          <div className="w-8 h-8 bg-primary-500/20 rounded-full flex items-center justify-center mr-2">
-                                            <User size={16} className="text-primary-400" />
-                                          </div>
-                                          <div>
-                                            <div className="font-medium">{customer.name}</div>
-                                            <div className="text-xs text-gray-400">{customer.phone}</div>
-                                          </div>
-                                        </button>
-                                      ))
-                                    ) : (
-                                      <div className="p-3 text-center text-gray-400">
-                                        Nenhum cliente encontrado
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
+                                <div className="mt-2">
+                                  <Button
+                                    type="button"
+                                    variant="dark"
+                                    size="sm"
+                                    className="w-full mb-2"
+                                    onClick={() => setIsAddingNewCustomer(true)}
+                                  >
+                                    <Plus size={16} className="mr-2" />
+                                    Novo Cliente
+                                  </Button>
+                                  
+                                  {customerSearchTerm && (
+                                    <div className="border border-dark-600 rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+                                      {filteredCustomers.length > 0 ? (
+                                        filteredCustomers.map(customer => (
+                                          <button
+                                            key={customer.id}
+                                            className="flex items-center w-full p-2 hover:bg-dark-700 text-left"
+                                            onClick={() => selectCustomer(customer)}
+                                          >
+                                            <div className="w-8 h-8 bg-primary-500/20 rounded-full flex items-center justify-center mr-2">
+                                              <User size={16} className="text-primary-400" />
+                                            </div>
+                                            <div>
+                                              <div className="font-medium">{customer.name}</div>
+                                              <div className="text-xs text-gray-400">{customer.phone}</div>
+                                            </div>
+                                          </button>
+                                        ))
+                                      ) : (
+                                        <div className="p-3 text-center text-gray-400">
+                                          Nenhum cliente encontrado
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             )}
                             
@@ -629,23 +653,29 @@ const Sales = () => {
                 </div>
                 
                 <div className="px-6 py-4 border-t border-dark-700 flex justify-between sticky bottom-0 bg-dark-800 z-10">
-                  <Button
-                    type="button"
-                    variant="dark"
-                    onClick={closeNewSaleModal}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    onClick={handleCreateSale}
-                    className="flex items-center gap-2"
-                    disabled={selectedProducts.length === 0}
-                  >
-                    <Calculator size={18} />
-                    <span>{selectedSale ? 'Atualizar Venda' : 'Finalizar Venda'}</span>
-                  </Button>
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <UserCheck size={18} />
+                    <span>Vendedor: {user?.name}</span>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="dark"
+                      onClick={closeNewSaleModal}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={handleCreateSale}
+                      className="flex items-center gap-2"
+                      disabled={selectedProducts.length === 0}
+                    >
+                      <Calculator size={18} />
+                      <span>{selectedSale ? 'Atualizar Venda' : 'Finalizar Venda'}</span>
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
             </div>
@@ -675,8 +705,7 @@ const Sales = () => {
                 className="relative bg-dark-800 rounded-xl shadow-xl w-full max-w-2xl border border-dark-700 z-10"
               >
                 <div className="px-6 py-4 border-b border-dark-700">
-                  <h3 className="text-xl font-semibol
-d text-white">Novo Cliente</h3>
+                  <h3 className="text-xl font-semibold text-white">Novo Cliente</h3>
                 </div>
                 
                 <form onSubmit={handleSubmitCustomer(handleAddNewCustomer)}>
@@ -697,10 +726,9 @@ d text-white">Novo Cliente</h3>
                         <input
                           id="email"
                           type="email"
-                          className={`input ${customerErrors.email ? 'border-error-dark' : ''}`}
-                          {...registerCustomer('email', { required: true, pattern: /^\S+@\S+$/i })}
+                          className="input"
+                          {...registerCustomer('email')}
                         />
-                        {customerErrors.email && <p className="mt-1 text-xs text-error-light">Email válido é obrigatório</p>}
                       </div>
                       
                       <div>
@@ -733,11 +761,10 @@ d text-white">Novo Cliente</h3>
                         <label htmlFor="address" className="block text-sm font-medium text-gray-300 mb-1">Endereço</label>
                         <input
                           id="address"
-                          className={`input ${customerErrors.address ? 'border-error-dark' : ''}`}
+                          className="input"
                           placeholder="Rua, número, bairro, cidade, estado"
-                          {...registerCustomer('address', { required: true })}
+                          {...registerCustomer('address')}
                         />
-                        {customerErrors.address && <p className="mt-1 text-xs text-error-light">Endereço é obrigatório</p>}
                       </div>
                     </div>
                   </div>

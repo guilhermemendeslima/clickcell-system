@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Card, CardHeader, CardBody } from '../components/UI/Card';
 import Button from '../components/UI/Button';
 import Badge from '../components/UI/Badge';
-import { Search, UserPlus, Edit, Trash2, Mail, Phone, Calendar, UserCheck } from 'lucide-react';
+import { Search, UserPlus, Edit, Trash2, Mail, Phone, Calendar, UserCheck, Lock } from 'lucide-react';
 import { mockEmployees, Employee } from '../data/employees';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { useForm } from 'react-hook-form';
+import { useAuth } from '../contexts/AuthContext';
 
 const roleTranslations = {
   admin: 'Administrador',
@@ -16,10 +17,14 @@ const roleTranslations = {
 };
 
 const Employees = () => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [employees, setEmployees] = useState(mockEmployees);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
   
   const { register, handleSubmit, reset, formState: { errors } } = useForm<Employee>();
   
@@ -49,7 +54,7 @@ const Employees = () => {
           ...selectedEmployee, 
           ...data,
           avatar: data.avatar || selectedEmployee.avatar,
-          hireDate: selectedEmployee.hireDate, // Keep the original hire date
+          hireDate: selectedEmployee.hireDate,
         } : employee
       );
       setEmployees(updatedEmployees);
@@ -58,6 +63,9 @@ const Employees = () => {
   };
   
   const handleToggleStatus = (id: string) => {
+    const employee = employees.find(emp => emp.id === id);
+    if (employee?.role === 'admin') return;
+    
     const updatedEmployees = employees.map(employee => 
       employee.id === id ? { 
         ...employee, 
@@ -67,9 +75,33 @@ const Employees = () => {
     setEmployees(updatedEmployees);
   };
   
+  const openDeleteConfirmation = (employee: Employee) => {
+    if (employee.role === 'admin') {
+      if (user?.role !== 'admin') return;
+      setSelectedEmployee(employee);
+      setIsDeleteModalOpen(true);
+      setDeleteError('');
+      return;
+    }
+    
+    handleDeleteEmployee(employee.id);
+  };
+  
   const handleDeleteEmployee = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este funcionário?')) {
-      setEmployees(employees.filter(employee => employee.id !== id));
+    setEmployees(employees.filter(employee => employee.id !== id));
+    setIsDeleteModalOpen(false);
+    setSelectedEmployee(null);
+    setDeletePassword('');
+  };
+  
+  const confirmAdminDelete = () => {
+    if (deletePassword !== '123456') {
+      setDeleteError('Senha incorreta');
+      return;
+    }
+    
+    if (selectedEmployee) {
+      handleDeleteEmployee(selectedEmployee.id);
     }
   };
   
@@ -188,11 +220,12 @@ const Employees = () => {
                       <td>
                         <button
                           onClick={() => handleToggleStatus(employee.id)}
+                          disabled={employee.role === 'admin'}
                           className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                             employee.status === 'active'
                               ? 'bg-success-dark text-success-light'
                               : 'bg-error-dark text-error-light'
-                          }`}
+                          } ${employee.role === 'admin' ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <div className={`w-2 h-2 rounded-full mr-1.5 ${
                             employee.status === 'active' ? 'bg-success-light' : 'bg-error-light'
@@ -208,12 +241,15 @@ const Employees = () => {
                           >
                             <Edit size={18} />
                           </button>
-                          <button
-                            onClick={() => handleDeleteEmployee(employee.id)}
-                            className="p-1 text-gray-400 hover:text-error-light rounded-md hover:bg-dark-600"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          {((employee.role === 'admin' && user?.role === 'admin') || 
+                            (employee.role !== 'admin')) && (
+                            <button
+                              onClick={() => openDeleteConfirmation(employee)}
+                              className="p-1 text-gray-400 hover:text-error-light rounded-md hover:bg-dark-600"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -231,6 +267,7 @@ const Employees = () => {
         </CardBody>
       </Card>
       
+      {/* Add/Edit Employee Modal */}
       <AnimatePresence>
         {isAddModalOpen && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -329,6 +366,7 @@ const Employees = () => {
                             id="status"
                             className="input"
                             {...register('status')}
+                            disabled={selectedEmployee.role === 'admin'}
                           >
                             <option value="active">Ativo</option>
                             <option value="inactive">Inativo</option>
@@ -354,6 +392,74 @@ const Employees = () => {
                     </Button>
                   </div>
                 </form>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Admin Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen px-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 bg-black/60"
+                onClick={() => setIsDeleteModalOpen(false)}
+              ></motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="relative bg-dark-800 rounded-xl shadow-xl w-full max-w-md border border-dark-700 z-10"
+              >
+                <div className="px-6 py-4 border-b border-dark-700">
+                  <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                    <Lock size={20} />
+                    <span>Confirmar Exclusão</span>
+                  </h3>
+                </div>
+                
+                <div className="p-6">
+                  <p className="text-gray-300 mb-4">
+                    Para excluir um administrador, por favor digite sua senha:
+                  </p>
+                  
+                  <input
+                    type="password"
+                    className="input w-full"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="Digite sua senha"
+                  />
+                  
+                  {deleteError && (
+                    <p className="mt-2 text-sm text-error-light">{deleteError}</p>
+                  )}
+                </div>
+                
+                <div className="px-6 py-4 border-t border-dark-700 flex justify-end gap-3">
+                  <Button
+                    type="button"
+                    variant="dark"
+                    onClick={() => setIsDeleteModalOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={confirmAdminDelete}
+                  >
+                    Confirmar
+                  </Button>
+                </div>
               </motion.div>
             </div>
           </div>
