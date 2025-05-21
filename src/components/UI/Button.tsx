@@ -12,7 +12,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string;
 }
 
-const Button = ({
+export default function Button({
   children,
   variant = 'primary',
   size = 'md',
@@ -20,7 +20,7 @@ const Button = ({
   fullWidth = false,
   className = '',
   ...props
-}: ButtonProps) => {
+}: ButtonProps) {
   const baseClasses = 'btn';
   
   const variantClasses = {
@@ -58,6 +58,4 @@ const Button = ({
       )}
     </button>
   );
-};
-
-export default Button;
+}
