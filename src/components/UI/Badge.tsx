@@ -8,7 +8,7 @@ interface BadgeProps {
   className?: string;
 }
 
-export const Badge = ({ children, variant = 'primary', className = '' }: BadgeProps) => {
+const Badge = ({ children, variant = 'primary', className = '' }: BadgeProps) => {
   const baseClasses = 'badge';
   
   const variantClasses = {
@@ -26,4 +26,4 @@ export const Badge = ({ children, variant = 'primary', className = '' }: BadgePr
   );
 };
 
-export default Badge
+export default Badge;
