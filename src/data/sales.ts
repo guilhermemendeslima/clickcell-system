@@ -1,3 +1,16 @@
+export type PaymentMethod = 'credit_card' | 'debit_card' | 'cash' | 'pix';
+
+export type PaymentInstallment = {
+  number: number;
+  value: number;
+};
+
+export type PaymentDetail = {
+  method: PaymentMethod;
+  amount: number;
+  installments?: PaymentInstallment[];
+};
+
 export type Sale = {
   id: string;
   customerId: string | null;
@@ -5,7 +18,7 @@ export type Sale = {
   date: string;
   items: SaleItem[];
   total: number;
-  paymentMethod: 'credit_card' | 'debit_card' | 'cash' | 'pix';
+  payments: PaymentDetail[];
   employeeId: string;
   employeeName: string;
   status: 'completed' | 'canceled';
@@ -42,7 +55,17 @@ export const mockSales: Sale[] = [
       },
     ],
     total: 9999.98,
-    paymentMethod: 'credit_card',
+    payments: [
+      {
+        method: 'credit_card',
+        amount: 9999.98,
+        installments: [
+          { number: 1, value: 3333.33 },
+          { number: 2, value: 3333.33 },
+          { number: 3, value: 3333.32 },
+        ],
+      },
+    ],
     employeeId: '2',
     employeeName: 'Marina Souza',
     status: 'completed',
@@ -76,7 +99,17 @@ export const mockSales: Sale[] = [
       },
     ],
     total: 4849.96,
-    paymentMethod: 'pix',
+    payments: [
+      { method: 'cash', amount: 2000.00 },
+      { 
+        method: 'credit_card', 
+        amount: 2849.96,
+        installments: [
+          { number: 1, value: 1424.98 },
+          { number: 2, value: 1424.98 },
+        ],
+      },
+    ],
     employeeId: '4',
     employeeName: 'Juliana Alves',
     status: 'completed',
@@ -96,7 +129,9 @@ export const mockSales: Sale[] = [
       },
     ],
     total: 6799.99,
-    paymentMethod: 'credit_card',
+    payments: [
+      { method: 'pix', amount: 6799.99 },
+    ],
     employeeId: '2',
     employeeName: 'Marina Souza',
     status: 'completed',
@@ -123,7 +158,9 @@ export const mockSales: Sale[] = [
       },
     ],
     total: 219.98,
-    paymentMethod: 'cash',
+    payments: [
+      { method: 'cash', amount: 219.98 },
+    ],
     employeeId: '4',
     employeeName: 'Juliana Alves',
     status: 'completed',
@@ -143,16 +180,33 @@ export const mockSales: Sale[] = [
       },
     ],
     total: 1799.99,
-    paymentMethod: 'debit_card',
+    payments: [
+      { method: 'debit_card', amount: 1799.99 },
+    ],
     employeeId: '2',
     employeeName: 'Marina Souza',
     status: 'completed',
   },
 ];
 
-export const paymentMethodTranslations: Record<Sale['paymentMethod'], string> = {
+export const paymentMethodTranslations: Record<PaymentMethod, string> = {
   credit_card: 'Cartão de Crédito',
   debit_card: 'Cartão de Débito',
   cash: 'Dinheiro',
   pix: 'Pix',
 };
+
+export const installmentOptions = [
+  { value: 1, label: 'À vista' },
+  { value: 2, label: '2x sem juros' },
+  { value: 3, label: '3x sem juros' },
+  { value: 4, label: '4x sem juros' },
+  { value: 5, label: '5x sem juros' },
+  { value: 6, label: '6x sem juros' },
+  { value: 7, label: '7x sem juros' },
+  { value: 8, label: '8x sem juros' },
+  { value: 9, label: '9x sem juros' },
+  { value: 10, label: '10x sem juros' },
+  { value: 11, label: '11x sem juros' },
+  { value: 12, label: '12x sem juros' },
+];
