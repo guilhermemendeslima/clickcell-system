@@ -1,15 +1,48 @@
+export type DeviceType = 'smartphone' | 'tablet' | 'desktop' | 'videogame';
+
+export type DeviceDetails = {
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  condition?: string;
+} & (
+  | {
+      type: 'smartphone' | 'tablet';
+      imei: string;
+      password?: string;
+    }
+  | {
+      type: 'desktop';
+      processor: string;
+      ram: string;
+      storage: string;
+      operatingSystem: string;
+      peripherals: string[];
+    }
+  | {
+      type: 'videogame';
+      version: string;
+      storageCapacity: string;
+      accessories: string[];
+    }
+);
+
 export type ServiceOrder = {
   id: string;
   customerId: string;
   customerName: string;
-  deviceType: string;
-  deviceModel: string;
+  deviceDetails: DeviceDetails;
   defect: string;
-  imei: string;
-  password: string;
   budget: number | null;
   notes: string;
   status: 'pending' | 'diagnosing' | 'waiting_approval' | 'in_progress' | 'completed' | 'delivered' | 'cancelled';
+  estimatedCompletionDate: string | null;
+  technicalNotes: string;
+  maintenanceHistory: {
+    date: string;
+    description: string;
+    technician: string;
+  }[];
   createdAt: string;
   updatedAt: string;
   technicianId: string | null;
@@ -21,13 +54,26 @@ export const mockServiceOrders: ServiceOrder[] = [
     id: 'OS-2023-001',
     customerId: '1',
     customerName: 'Ana Silva',
-    deviceType: 'Smartphone',
-    deviceModel: 'iPhone 12',
+    deviceDetails: {
+      type: 'smartphone',
+      brand: 'Apple',
+      model: 'iPhone 12',
+      imei: '352789102345678',
+      password: '1234',
+      condition: 'Bom estado, pequenos arranhões',
+    },
     defect: 'Tela quebrada',
-    imei: '352789102345678',
-    password: '1234',
     budget: 799.99,
     notes: 'Cliente relatou que o aparelho caiu no chão. Tela quebrada mas ainda funciona.',
+    technicalNotes: 'Necessária substituição do display completo',
+    estimatedCompletionDate: '2023-06-13T14:15:00Z',
+    maintenanceHistory: [
+      {
+        date: '2023-06-11T14:15:00Z',
+        description: 'Diagnóstico inicial realizado',
+        technician: 'Ricardo Costa',
+      }
+    ],
     status: 'in_progress',
     createdAt: '2023-06-10T10:30:00Z',
     updatedAt: '2023-06-11T14:15:00Z',
@@ -35,72 +81,58 @@ export const mockServiceOrders: ServiceOrder[] = [
     technicianName: 'Ricardo Costa',
   },
   {
-    id: 'OS-2023-002',
-    customerId: '2',
-    customerName: 'Carlos Oliveira',
-    deviceType: 'Smartphone',
-    deviceModel: 'Samsung Galaxy S21',
-    defect: 'Não carrega',
-    imei: '356789054321890',
-    password: '0000',
-    budget: null,
-    notes: 'Aparelho não carrega. Verificar porta USB-C e bateria.',
-    status: 'diagnosing',
-    createdAt: '2023-06-12T09:45:00Z',
-    updatedAt: '2023-06-12T09:45:00Z',
-    technicianId: null,
-    technicianName: null,
-  },
-  {
-    id: 'OS-2023-003',
+    id: 'OS-2023-006',
     customerId: '4',
     customerName: 'Rafael Santos',
-    deviceType: 'Tablet',
-    deviceModel: 'iPad Pro 11"',
-    defect: 'Não liga',
-    imei: '357123456789012',
-    password: '141516',
-    budget: 349.99,
-    notes: 'Cliente tentou várias vezes ligar o aparelho sem sucesso. Verificar placa e bateria.',
-    status: 'waiting_approval',
-    createdAt: '2023-06-05T14:20:00Z',
-    updatedAt: '2023-06-07T11:30:00Z',
+    deviceDetails: {
+      type: 'desktop',
+      brand: 'Dell',
+      model: 'Inspiron Desktop',
+      serialNumber: 'DLL123456789',
+      processor: 'Intel Core i7-11700',
+      ram: '16GB DDR4',
+      storage: 'SSD 512GB + HD 1TB',
+      operatingSystem: 'Windows 11 Pro',
+      peripherals: ['Teclado Dell', 'Mouse Dell', 'Monitor Dell 24"'],
+      condition: 'Bom estado geral',
+    },
+    defect: 'Não liga após queda de energia',
+    budget: 350.00,
+    notes: 'Cliente relatou que após uma queda de energia o computador parou de ligar',
+    technicalNotes: 'Possível problema na fonte de alimentação',
+    estimatedCompletionDate: '2023-06-15T17:00:00Z',
+    maintenanceHistory: [],
+    status: 'diagnosing',
+    createdAt: '2023-06-12T09:00:00Z',
+    updatedAt: '2023-06-12T09:00:00Z',
     technicianId: '5',
     technicianName: 'Pedro Santos',
   },
   {
-    id: 'OS-2023-004',
+    id: 'OS-2023-007',
     customerId: '6',
     customerName: 'Fernando Dias',
-    deviceType: 'Smartphone',
-    deviceModel: 'Xiaomi Redmi Note 10',
-    defect: 'Câmera não funciona',
-    imei: '358765432109876',
-    password: '5555',
-    budget: 249.99,
-    notes: 'Câmera principal não funciona. Câmera frontal ok.',
-    status: 'completed',
-    createdAt: '2023-06-01T08:50:00Z',
-    updatedAt: '2023-06-04T16:25:00Z',
+    deviceDetails: {
+      type: 'videogame',
+      brand: 'Sony',
+      model: 'PlayStation 4',
+      serialNumber: 'PS4XB123456',
+      version: 'Pro',
+      storageCapacity: '1TB',
+      accessories: ['2 Controles DualShock 4', 'Cabo HDMI', 'Cabo de energia'],
+      condition: 'Algumas marcas de uso',
+    },
+    defect: 'Superaquecimento e desligamento durante jogos',
+    budget: 280.00,
+    notes: 'Console desliga após 30 minutos de uso',
+    technicalNotes: 'Necessária limpeza interna e troca da pasta térmica',
+    estimatedCompletionDate: '2023-06-14T16:00:00Z',
+    maintenanceHistory: [],
+    status: 'waiting_approval',
+    createdAt: '2023-06-11T15:30:00Z',
+    updatedAt: '2023-06-11T16:45:00Z',
     technicianId: '3',
     technicianName: 'Ricardo Costa',
-  },
-  {
-    id: 'OS-2023-005',
-    customerId: '7',
-    customerName: 'Gabriela Martins',
-    deviceType: 'Smartphone',
-    deviceModel: 'Motorola Moto G9',
-    defect: 'Tela com manchas',
-    imei: '359876543210987',
-    password: '1515',
-    budget: 399.99,
-    notes: 'Tela apresenta manchas escuras na parte inferior. Possível problema de LCD.',
-    status: 'delivered',
-    createdAt: '2023-05-28T13:15:00Z',
-    updatedAt: '2023-06-03T10:20:00Z',
-    technicianId: '5',
-    technicianName: 'Pedro Santos',
   },
 ];
 
@@ -122,4 +154,11 @@ export const serviceStatusColors: Record<ServiceOrder['status'], string> = {
   completed: 'success',
   delivered: 'success',
   cancelled: 'error',
+};
+
+export const deviceTypeTranslations: Record<DeviceType, string> = {
+  smartphone: 'Smartphone',
+  tablet: 'Tablet',
+  desktop: 'Computador',
+  videogame: 'Video Game',
 };
